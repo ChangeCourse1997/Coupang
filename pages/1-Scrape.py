@@ -28,22 +28,41 @@ class ScraperConfig:
     max_pages: int = 3
     headless: bool = True
     
-@st.cache_resource
 def get_chrome_driver():
     """Initialize Chrome driver with caching for Streamlit Cloud"""
     chrome_options = Options()
-    chrome_options.add_argument("--headless=new")  # Use new headless mode
-    chrome_options.add_argument("--disable-gpu")
+    
+    # Essential options for Streamlit Cloud
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--disable-logging")
-    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--remote-debugging-port=9222")
-    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
     
+    # Memory and performance optimizations
+    chrome_options.add_argument("--memory-pressure-off")
+    chrome_options.add_argument("--max_old_space_size=4096")
+    chrome_options.add_argument("--disable-background-timer-throttling")
+    chrome_options.add_argument("--disable-renderer-backgrounding")
+    
+    # Security and stability
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-plugins")
+    chrome_options.add_argument("--disable-images")  # Speed up loading
+    chrome_options.add_argument("--disable-javascript")  # We only need HTML structure
+    
+    # Window settings
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--start-maximized")
+    
+    # User agent
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+    
+    # Additional stability options
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+        
     try:
         # For Streamlit Cloud - use ChromeDriverManager with Chromium
         service = Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
