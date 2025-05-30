@@ -67,7 +67,7 @@ class Scraper:
 
         try:
             try:
-                service = Service()  # This will use chromedriver from PATH
+                # service = Service()  # This will use chromedriver from PATH
                 driver = get_driver(chrome_options)
             except:
                 # Fallback to specified path if available
