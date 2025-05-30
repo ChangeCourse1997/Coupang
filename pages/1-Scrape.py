@@ -59,12 +59,12 @@ class Scraper:
 
 
             @st.cache_resource
-            def get_driver():
+            def get_driver(chrome_options):
                 return webdriver.Chrome(
                     service=Service(
                         ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
                     ),
-                    options=options,
+                    options=chrome_options,
                 )
 
 
