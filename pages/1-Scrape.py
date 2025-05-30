@@ -11,6 +11,8 @@ import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
 from bs4 import BeautifulSoup
 import tempfile
 
@@ -43,8 +45,9 @@ class Scraper:
         self.url = f'https://www.lazada.sg/tag/{self.item}/?page={page_num}'
     
     def scrape_site(self, page_num=1):
+   
         chrome_options = Options()
-        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
@@ -53,10 +56,19 @@ class Scraper:
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--allow-running-insecure-content")
 
+        @st.cache_resource
+        def get_driver(chrome_options):
+            return webdriver.Chrome(
+                service=Service(
+                    ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+                ),
+                options=chrome_options,
+            )
+
         try:
             try:
                 service = Service()  # This will use chromedriver from PATH
-                driver = webdriver.Chrome(service=service, options=chrome_options)
+                driver = get_driver(chrome_options)
             except:
                 # Fallback to specified path if available
                 if os.path.exists(self.config.chrome_driver_path):
