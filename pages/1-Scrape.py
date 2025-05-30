@@ -28,6 +28,31 @@ class ScraperConfig:
     max_pages: int = 3
     headless: bool = True
     
+@st.cache_resource
+def get_chrome_driver():
+    """Initialize Chrome driver with caching for Streamlit Cloud"""
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")  # Use new headless mode
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-logging")
+    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--remote-debugging-port=9222")
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+    
+    try:
+        # For Streamlit Cloud - use ChromeDriverManager with Chromium
+        service = Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        return driver
+    except Exception as e:
+        st.error(f"Failed to initialize Chrome driver: {e}")
+        return None
+
 class Scraper:
     def __init__(self, item: str, config: ScraperConfig):
         self.config = config
@@ -46,55 +71,34 @@ class Scraper:
     
     def scrape_site(self, page_num=1):
    
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--disable-logging")
-        chrome_options.add_argument("--disable-web-security")
-        chrome_options.add_argument("--allow-running-insecure-content")
-        with st.echo():
-
-
-            @st.cache_resource
-            def get_driver(chrome_options):
-                return webdriver.Chrome(
-                    service=Service(
-                        ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-                    ),
-                    options=chrome_options,
-                )
-
-
+        driver = None    
+        try:
             try:
-                try:
-                    # service = Service()  # This will use chromedriver from PATH
-                    driver = get_driver(chrome_options)
-                except:
-                    # Fallback to specified path if available
-                    if os.path.exists(self.config.chrome_driver_path):
-                        service = Service(self.config.chrome_driver_path)
-                        driver = webdriver.Chrome(service=service, options=chrome_options)
-                    else:
-                        raise Exception("ChromeDriver not found :(")
-                
-                self.set_url(page_num)
-                driver.get(self.url)
-                time.sleep(self.config.page_load_wait)
-                
-                page_source = driver.page_source
-                self.soup = BeautifulSoup(page_source, 'html.parser')
-                
-                return True
-                
-            except Exception as e:
-                st.error(f'Cannot connect to Chrome driver: {e}')
-                return False
-            finally:
-                if 'driver' in locals():
-                    driver.quit()
+                # service = Service()  # This will use chromedriver from PATH
+                driver = get_chrome_driver()
+            except:
+                # Fallback to specified path if available
+                if os.path.exists(self.config.chrome_driver_path):
+                    service = Service(self.config.chrome_driver_path)
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                else:
+                    raise Exception("ChromeDriver not found :(")
+            
+            self.set_url(page_num)
+            driver.get(self.url)
+            time.sleep(self.config.page_load_wait)
+            
+            page_source = driver.page_source
+            self.soup = BeautifulSoup(page_source, 'html.parser')
+            
+            return True
+            
+        except Exception as e:
+            st.error(f'Cannot connect to Chrome driver: {e}')
+            return False
+        finally:
+            if 'driver' in locals():
+                driver.quit()
 
     def extract_data(self):
         if not self.soup:
